@@ -1,0 +1,37 @@
+struct ProgramHolder
+{
+private:
+   std::shared_ptr<Program> _prog;
+   
+public:
+   std::vector<Uniform> uniforms;
+   
+   ProgramHolder(FilePath path_vs, FilePath path_fs)
+   {
+      _prog = std::make_shared<Program>(loadProgram(path_vs, path_fs));
+   }
+
+   void
+   add_uniform(GLType gl_type, std::string name)
+   {
+      GLuint unif_ptr = glGetUniformLocation(_prog->getGLId(),
+                                             name.c_str());
+      uniforms.push_back(
+         {
+            gl_type,
+            name,
+            unif_ptr
+         });
+   }
+   
+   ProgramHolder &
+   with_uniform(GLType gl_type, std::string name)
+   {
+      add_uniform(gl_type, name);
+      return *this;
+   }   
+
+   RenderableBuilder
+   create_renderable();
+
+};

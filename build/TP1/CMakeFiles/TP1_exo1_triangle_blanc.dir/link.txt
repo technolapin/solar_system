@@ -1,0 +1,1 @@
+/usr/bin/c++ -rdynamic CMakeFiles/TP1_exo1_triangle_blanc.dir/exo1_triangle_blanc.cpp.o -o TP1_exo1_triangle_blanc  ../glimac/libglimac.a -Wl,-Bstatic -lSDLmain -Wl,-Bdynamic -lSDL -lpthread -lGL -lGLU -lGLEW 

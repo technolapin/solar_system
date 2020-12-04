@@ -1,0 +1,30 @@
+#version 300 es
+
+
+layout(location = 0) in vec2 aVertexPosition;
+layout(location = 1) in vec3 aVertexColor;
+
+out vec3 vFragColor;
+
+void main() {
+  vFragColor = aVertexColor;
+
+  float angle = 0.0;
+  vec2 translation = vec2(10, 0);
+  float size = 1.0;
+  vec2 deform = vec2(1., 1);
+  
+  mat3 rotation = mat3(cos(angle) , sin(angle), 0.,
+                       -sin(angle), cos(angle), 0.,
+                       0.         , 0.        , 1. );
+  mat3 trans_mat = mat3(1., 0., translation.x,
+                        0., 1., translation.y,
+                        0., 0., 1.            );
+
+  mat3 resize = mat3( size*deform.x, 0., 0.,
+                      0., size*deform.y, 0.,
+                      0., 0., 1. );
+  
+  gl_Position = vec4((trans_mat*rotation*resize*vec3(aVertexPosition, 1)).xy, 0, 1);
+};
+

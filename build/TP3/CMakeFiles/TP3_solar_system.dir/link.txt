@@ -1,0 +1,1 @@
+/usr/bin/c++ -rdynamic CMakeFiles/TP3_solar_system.dir/solar_system.cpp.o -o TP3_solar_system  ../glimac/libglimac.a -Wl,-Bstatic -lSDLmain -Wl,-Bdynamic -lSDL -lpthread -lGL -lGLU -lGLEW 

@@ -1,0 +1,13 @@
+file_name=$1
+out_name=$2
+
+while sleep 1
+do
+    cd GLImac-Template-build
+    cmake ../GLImac-Template
+    cd ..
+    "./$out_name"&
+    inotifywait -q -e modify $file_name
+    killall "$(basename out_name)"
+done
+
