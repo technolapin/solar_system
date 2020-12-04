@@ -87,18 +87,6 @@ int main(int argc, char** argv) {
     auto moon_renderer = renderer.add_monotex(path_vs,
                                               path_fs_mono,
                                               moon_tex);
-
-    GLuint uTexture = glGetUniformLocation(program.getGLId(), "uTexture");
-
-    ProgramHolder pgrm1 = ProgramHolder(path_vs, path_fs_mono);
-    pgrm1.add_uniform(GLType::Sampler2D, "uTexture");
-
-    std::vector<std::shared_ptr<ProgramHolder>> programs;
-
-    programs.push_back(std::make_shared<ProgramHolder>(pgrm1));
-
-    
-
     
 
     auto M = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
@@ -119,8 +107,6 @@ int main(int argc, char** argv) {
 
     glEnable(GL_DEPTH_TEST);
     
-    std::cout << "MARCO 2!" << std::endl;
-
     for (auto & obj: meshes)
     {
        std::cout << obj << std::endl;
@@ -140,20 +126,33 @@ int main(int argc, char** argv) {
        
        pos_init.push_back(p_ortho);
     }
-    
 
+
+    // mouse stuff
+    float mouse_amplitude = 1.0f;
+    float mouse_speed = 1.0f;
+    auto mouse_pos = windowManager.getMousePosition();
+    auto mouse_angle = glm::vec2(glm::atan(mouse_pos[0]/mouse_amplitude),
+                                 glm::atan(mouse_pos[1]/mouse_amplitude));
+    
+    // Trackball camera
+    /*
     TrackballCamera camera;
     camera.set_center(glm::vec3(0.0f, 0.0f, -5.0f));
     camera.moveFront(5.0);
 
-    
-    auto mouse_pos = windowManager.getMousePosition();
-    auto mouse_angle = glm::vec2(glm::atan(mouse_pos[0]/camera.m_fDistance),
-                                 glm::atan(mouse_pos[1]/camera.m_fDistance));
     float friction = 0.99;
     float sensibility = 10000.0;
     auto rotation_speed = glm::vec2(0.0f, 0.0f);
     bool was_mouse_pressed = false;
+    */
+
+    //////// Freefly camera
+
+    float speed = 1.0;
+    
+    FreeflyCamera camera;
+    
 // Application loop:
     bool done = false;
     while(!done) {
@@ -165,16 +164,30 @@ int main(int argc, char** argv) {
             }
         }
 
+        if (windowManager.isKeyPressed(SDLK_ESCAPE))
+        {
+           done = true;
+        }
+        
         /// events and such
+        auto new_mouse_pos = windowManager.getMousePosition();
+        auto new_mouse_angle = glm::vec2(glm::atan(new_mouse_pos[0]/mouse_amplitude),
+                                         glm::atan(new_mouse_pos[1]/mouse_amplitude));
+        auto mouse_angle_delta = new_mouse_angle - mouse_angle;
+        auto mouse_delta = new_mouse_pos - mouse_pos;
+        if ((new_mouse_pos[0] == 0.0f && new_mouse_pos[1] == 0.0f)
+            || (mouse_pos[0] == 0.0f && mouse_pos[0] == 0.0f))
+        {
+           mouse_delta = glm::vec2(0.0f);
+        }
+        mouse_pos = new_mouse_pos;
+        mouse_angle = new_mouse_angle;
 
         
 
-        auto new_mouse_pos = windowManager.getMousePosition();
-        auto new_mouse_angle = glm::vec2(glm::atan(new_mouse_pos[0]/camera.m_fDistance),
-                                         glm::atan(new_mouse_pos[1]/camera.m_fDistance));
-        auto mouse_delta = new_mouse_angle - mouse_angle;
-        mouse_pos = new_mouse_pos;
-        mouse_angle = new_mouse_angle;
+        //////////// Trackball camera
+        /*
+
         if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT))
         {
            rotation_speed *= friction/2.0;
@@ -185,16 +198,35 @@ int main(int argc, char** argv) {
            was_mouse_pressed = true;
         }
         else
-           
         {
            camera.rotateLeft(rotation_speed[0]);
            camera.rotateUp(rotation_speed[1]);
            was_mouse_pressed = false;
         }
-
-
         rotation_speed *= friction;
-        
+        */
+
+        /////////// freefly camera
+
+        if (windowManager.isKeyPressed(SDLK_z))
+        {
+           camera.moveFront(speed);
+        }
+        else if (windowManager.isKeyPressed(SDLK_s))
+        {
+           camera.moveFront(-speed);
+        }
+        else if (windowManager.isKeyPressed(SDLK_d))
+        {
+           camera.moveLeft(-speed);
+        }
+        else if (windowManager.isKeyPressed(SDLK_q))
+        {
+           camera.moveLeft(speed);
+        }
+
+        camera.rotateLeft(mouse_delta[0]*mouse_speed);
+        camera.rotateUp(mouse_delta[1]*mouse_speed);
         // *********************************
         // * HERE SHOULD COME THE RENDERING CODE
         // *********************************
