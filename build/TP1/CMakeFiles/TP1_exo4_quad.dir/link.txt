@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic CMakeFiles/TP1_exo4_quad.dir/exo4_quad.cpp.o -o TP1_exo4_quad  ../glimac/libglimac.a -Wl,-Bstatic -lSDLmain -Wl,-Bdynamic -lSDL -lpthread -lGL -lGLU -lGLEW 

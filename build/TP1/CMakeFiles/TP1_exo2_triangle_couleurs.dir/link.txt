@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic CMakeFiles/TP1_exo2_triangle_couleurs.dir/exo2_triangle_couleurs.cpp.o -o TP1_exo2_triangle_couleurs  ../glimac/libglimac.a -Wl,-Bstatic -lSDLmain -Wl,-Bdynamic -lSDL -lpthread -lGL -lGLU -lGLEW 

@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic CMakeFiles/TP2_triangle_couleur.dir/triangle_couleur.cpp.o -o TP2_triangle_couleur  ../glimac/libglimac.a -Wl,-Bstatic -lSDLmain -Wl,-Bdynamic -lSDL -lpthread -lGL -lGLU -lGLEW 

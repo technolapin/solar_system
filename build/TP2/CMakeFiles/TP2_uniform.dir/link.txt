@@ -1,1 +1,0 @@
-/usr/bin/c++ -rdynamic CMakeFiles/TP2_uniform.dir/uniform.cpp.o -o TP2_uniform  ../glimac/libglimac.a -Wl,-Bstatic -lSDLmain -Wl,-Bdynamic -lSDL -lpthread -lGL -lGLU -lGLEW 
