@@ -5,15 +5,10 @@
 #include "textures_handler.hpp"
 
 
-#include "glvars.hpp"
-#include "program_holder.hpp"
-//#include "renderable.hpp"
-
-
-#include "scene.cpp"
-#include "program_holder.cpp"
-
 #include "renderer.hpp"
+#include "scene.cpp"
+
+#include "lights.hpp"
 
 #include "cameras/trackball_camera.hpp"
 #include "cameras/free_fly.hpp"
@@ -153,6 +148,7 @@ int main(int argc, char** argv) {
     
     FreeflyCamera camera;
     
+    
 // Application loop:
     bool done = false;
     while(!done) {
@@ -182,8 +178,6 @@ int main(int argc, char** argv) {
         }
         mouse_pos = new_mouse_pos;
         mouse_angle = new_mouse_angle;
-
-        
 
         //////////// Trackball camera
         /*

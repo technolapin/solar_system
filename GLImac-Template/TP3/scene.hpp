@@ -1,7 +1,6 @@
 #pragma once
-
 #include "declarations.hpp"
-#include "renderer.hpp"
+
 struct GLRenderable
 {
    GLObject mesh;
@@ -27,7 +26,8 @@ struct Scene
 {
 public:
    std::unordered_map<GLRenderable, std::vector<Instance>, hash_fn> instances;
-
+   std::vector<AnyLight> lights_dir;
+   std::vector<AnyLight> lights_pts;
    void
    print() const;
    

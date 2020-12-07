@@ -31,5 +31,9 @@ struct TextureHandler;
 //struct ProgramHolder;
 struct Renderable;
 struct RenderableBuilder;
-
-
+struct AnyLight;
+struct Renderer;
+struct ProgramManager;
+struct MonotextureProgramManager;
+struct BitextureProgramManager;
+struct PgrmHandle;

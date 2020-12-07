@@ -1,5 +1,6 @@
 #pragma once 
-#include "scene.hpp"
+//#include "scene.hpp"
+#include "declarations.hpp"
 
 
 struct ProgramManager
