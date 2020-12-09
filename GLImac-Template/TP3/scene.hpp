@@ -37,10 +37,5 @@ public:
 
    void
    add(const GLObject & mesh, const PgrmHandle & rend, const Instance & inst);
-/*
-   void
-   render(GLint uMVP, GLint uMV, GLint uNormal,
-          glm::mat4 & v_mat, glm::mat4 &  p_mat) const;
-*/
 };
 

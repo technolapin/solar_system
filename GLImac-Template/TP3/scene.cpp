@@ -36,9 +36,9 @@ Scene::add(const GLObject & mesh, const PgrmHandle & pgrm, const Instance & inst
    vec.push_back(inst);
 }
 
-
-void Renderer::render(Scene scene,  PgrmHandle pgrm, glm::mat4 v_mat, glm::mat4 p_mat)
+void Renderer::render(Scene scene, PgrmHandle pgrm, glm::mat4 v_mat, glm::mat4 p_mat)
 {
+   
 
    ////////////////////////////////
    for (auto & couple: scene.instances)
@@ -48,13 +48,43 @@ void Renderer::render(Scene scene,  PgrmHandle pgrm, glm::mat4 v_mat, glm::mat4 
 
       setup(pgrm);
 
+   // get lights uniforms
+   GLuint uDirLights = this->uniform_location(pgrm, "uDirLights");
+   GLuint uPtsLights = this->uniform_location(pgrm, "uPtsLights");
+//   GLuint testloc = this->uniform_location(pgrm, "test");
+
+   auto lights_dir = AnyLight::values_ptrs(scene.lights_dir, v_mat);
+   auto lights_pts = AnyLight::values_ptrs(scene.lights_pts, v_mat);
+   // GLfloat test[6] = {1., 1., 1., 1., 1., 1.};
+   glUniformMatrix2x3fv(uDirLights,
+                        glm::min((size_t) 10, scene.lights_dir.size()),
+//                        10,
+                        false,
+                        lights_dir.data());
+   glUniformMatrix2x3fv(uPtsLights,
+                        glm::min((size_t) 10, scene.lights_pts.size()),
+                        false,
+                        lights_pts.data());
+   /*
+   glUniformMatrix2x3fv(testloc,
+                        1,
+                        false,
+                        test);
+   */
+   
+
+
+      
       for (auto & inst: couple.second)
       {
-         auto MV = v_mat * inst.model_mat;
+         auto M = inst.model_mat;
+         auto MV = v_mat * M;
          auto MVP = p_mat * MV;
          auto N = glm::transpose(glm::inverse(MV));
 
-         
+         glUniformMatrix4fv(_uM,
+                            1, false,
+                            glm::value_ptr(M));
          glUniformMatrix4fv(_uMVP,
                             1, false,
                             glm::value_ptr(MVP));
@@ -74,41 +104,5 @@ void Renderer::render(Scene scene,  PgrmHandle pgrm, glm::mat4 v_mat, glm::mat4 
 
    } 
 }
-
-/*
-void
-Scene::render(GLint uMVP, GLint uMV, GLint uNormal,
-              glm::mat4 & v_mat, glm::mat4 &  p_mat) const
-{
-   for (auto & couple: this->instances)
-   {
-      auto & mesh = couple.first.mesh;
-      auto & pgrm = couple.first.pgrm;
-      
-      for (auto & inst: couple.second)
-      {
-         auto MV = v_mat * inst.model_mat;
-         auto MVP = p_mat * MV;
-         auto N = glm::transpose(glm::inverse(MV));
-
-         
-         glUniformMatrix4fv(uMVP,
-                            1, false,
-                            glm::value_ptr(MVP));
-         glUniformMatrix4fv(uMV,
-                            1, false,
-                            glm::value_ptr(MV));
-         glUniformMatrix4fv(uNormal,
-                            1, false,
-                            glm::value_ptr(N));
-
-         mesh.draw();
-
-      }
-   }
-}
-*/
-
-
 
 

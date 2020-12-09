@@ -1,5 +1,4 @@
 #pragma once 
-//#include "scene.hpp"
 #include "declarations.hpp"
 
 
@@ -116,6 +115,7 @@ private:
    std::vector<ProgramManager *> _pgrms;
    GLuint _uMVP;
    GLuint _uMV;
+   GLuint _uM;
    GLuint _uNormal;
 
 
@@ -152,6 +152,7 @@ public:
    {
       _uMVP = glGetUniformLocation(_pgrms[index.id]->getGLId(), "uMVPMatrix");
       _uMV = glGetUniformLocation(_pgrms[index.id]->getGLId(), "uMVMatrix");
+      _uM = glGetUniformLocation(_pgrms[index.id]->getGLId(), "uMMatrix");
       _uNormal = glGetUniformLocation(_pgrms[index.id]->getGLId(), "uNormalMatrix");
 
       _pgrms[index.id]->setup();
@@ -162,7 +163,11 @@ public:
    }
    
    void render(Scene scene, PgrmHandle pgrm, glm::mat4 V, glm::mat4 P);
-     
+   
+   GLuint uniform_location(PgrmHandle index, const char * name)
+   {
+      return glGetUniformLocation(_pgrms[index.id]->getGLId(), name);
+   }
 };
 
 

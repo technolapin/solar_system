@@ -4,11 +4,11 @@
 #include "instance.hpp"
 #include "textures_handler.hpp"
 
+#include "lights.hpp"
 
 #include "renderer.hpp"
 #include "scene.cpp"
 
-#include "lights.hpp"
 
 #include "cameras/trackball_camera.hpp"
 #include "cameras/free_fly.hpp"
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
     
     FilePath applicationPath(argv[0]);
     auto path_vs = applicationPath.dirPath() + "shaders" + "3D.vs.glsl";
-    auto path_fs_mono = applicationPath.dirPath() + "shaders" + "texture.fs.glsl";
+    auto path_fs_mono = applicationPath.dirPath() + "shaders" + "phong1tex.fs.glsl";
     auto path_fs_duo = applicationPath.dirPath() + "shaders" + "bitexture.fs.glsl";
     auto program = loadProgram(path_vs, path_fs_mono);    
     program.use();
@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
                                  glm::atan(mouse_pos[1]/mouse_amplitude));
     
     // Trackball camera
-    /*
+    
     TrackballCamera camera;
     camera.set_center(glm::vec3(0.0f, 0.0f, -5.0f));
     camera.moveFront(5.0);
@@ -140,14 +140,14 @@ int main(int argc, char** argv) {
     float sensibility = 10000.0;
     auto rotation_speed = glm::vec2(0.0f, 0.0f);
     bool was_mouse_pressed = false;
-    */
+    
 
     //////// Freefly camera
-
+    /*
     float speed = 1.0;
     
     FreeflyCamera camera;
-    
+    */
     
 // Application loop:
     bool done = false;
@@ -180,28 +180,26 @@ int main(int argc, char** argv) {
         mouse_angle = new_mouse_angle;
 
         //////////// Trackball camera
-        /*
-
         if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT))
         {
            rotation_speed *= friction/2.0;
-           auto angles = sensibility*mouse_delta;
-           rotation_speed += angles;
+           auto angles = sensibility*mouse_angle_delta;
+           rotation_speed[0] += angles[0]*camera.rotation_sign();
+           rotation_speed[1] += angles[1];
            camera.rotateLeft(angles[0]);
            camera.rotateUp(angles[1]);
            was_mouse_pressed = true;
         }
         else
         {
-           camera.rotateLeft(rotation_speed[0]);
+           camera.rotateLeft(rotation_speed[0]*camera.rotation_sign());
            camera.rotateUp(rotation_speed[1]);
            was_mouse_pressed = false;
         }
         rotation_speed *= friction;
-        */
 
         /////////// freefly camera
-
+        /*
         if (windowManager.isKeyPressed(SDLK_z))
         {
            camera.moveFront(speed);
@@ -221,6 +219,7 @@ int main(int argc, char** argv) {
 
         camera.rotateLeft(mouse_delta[0]*mouse_speed);
         camera.rotateUp(mouse_delta[1]*mouse_speed);
+        */
         // *********************************
         // * HERE SHOULD COME THE RENDERING CODE
         // *********************************
@@ -228,7 +227,12 @@ int main(int argc, char** argv) {
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        AnyLight light = {
+           glm::vec3(1.0, 1.0, 1.0),
+           glm::vec3(0.9, 0.0, 0.0),
+        };
         Scene scene;
+        scene.lights_dir.push_back(light);
         {
            auto center = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
     

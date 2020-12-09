@@ -3,6 +3,7 @@ precision mediump float;
 
 in vec3 vNormale;
 in vec2 vUV;
+in vec3 fPos;
 
 out vec3 fFragColor;
 
