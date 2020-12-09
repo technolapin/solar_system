@@ -38,7 +38,7 @@ make_sphere(GLfloat radius,
 
 int main(int argc, char** argv) {
     // Initialize SDL and open a window
-    SDLWindowManager windowManager(400, 400, "GLImac");
+    SDLWindowManager windowManager(1000, 1000, "GLImac");
 
     // Initialize glew for OpenGL3+ support
     GLenum glewInitError = glewInit();
@@ -122,7 +122,9 @@ int main(int argc, char** argv) {
        pos_init.push_back(p_ortho);
     }
 
-
+    // stuff
+    float speed = 0.2;
+    
     // mouse stuff
     float mouse_amplitude = 1.0f;
     float mouse_speed = 1.0f;
@@ -197,6 +199,14 @@ int main(int argc, char** argv) {
            was_mouse_pressed = false;
         }
         rotation_speed *= friction;
+        if (windowManager.isKeyPressed(SDLK_z))
+        {
+           camera.moveFront(speed);
+        }
+        else if (windowManager.isKeyPressed(SDLK_s))
+        {
+           camera.moveFront(-speed);
+        }
 
         /////////// freefly camera
         /*
@@ -226,13 +236,18 @@ int main(int argc, char** argv) {
 
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        AnyLight light = {
-           glm::vec3(1.0, 1.0, 1.0),
-           glm::vec3(0.9, 0.0, 0.0),
-        };
+        
+        
         Scene scene;
-        scene.lights_dir.push_back(light);
+        scene.lights_pts.push_back({
+                glm::vec3(0., 0., -5.),
+                glm::vec3(0.7, 0.6, 0.9)*1.0f
+            });
+        scene.lights_dir.push_back({ 
+                glm::vec3(1.0, 1.0, 9.0),
+                glm::vec3(0.9, 0.7, 0.7),
+            });
+        
         {
            auto center = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
     

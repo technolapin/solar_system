@@ -16,20 +16,18 @@ vec3 phong(vec3 diffuse,
            vec3 light_direction)
 {
 
-   float diff = max(dot(vNormale, -light_direction), 0.0);
+   float diff = min(max(dot(vNormale, light_direction), 0.0), 1.);
    vec3 amb = ambiant*light_intensity;
 
    vec3 camera_dir = normalize(-fVPos);
-   vec3 half_vec = (camera_dir + normalize(-light_direction))/2.;
+   vec3 half_vec = (camera_dir + light_direction)/2.;
 
-   float spec = pow(max(0., dot(half_vec, vNormale)),
-                    spec_exponent);
-   
-   float lol = dot(half_vec, vNormale);
-   return half_vec;
-   return diff*light_intensity*diffuse+ spec*specular;
+   float spec = max(0.0,
+                    pow(dot(half_vec, vNormale),
+                        spec_exponent));
+
+   return (ambiant+ diff*diffuse+ spec*specular)*light_intensity;
 }
-
 
 
 
@@ -42,29 +40,46 @@ struct Light
 uniform sampler2D uTexture;
 uniform mat2x3[10] uDirLights;
 uniform mat2x3[10] uPtsLights;
+uniform int uDirLightsCount;
+uniform int uPtsLightsCount;
+
 
 void main()
 {
    vec3 color = vec3(0., 0., 0);
 
-   for (int i = 0; i < 1; ++i)
+   for (int i = 0; i < uDirLightsCount; ++i)
    {
       vec3 ldir = uDirLights[i][0];
       vec3 lcol = uDirLights[i][1];
 
-//      ldir = vec3(1, 1, 1);
-  //    lcol = vec3(0.2, 0.2, 0.2);
-      color += phong(texture(uTexture, vUV).rgb,
-                     vec3(1.0),
-                     vec3(1.0),
-                     1.00,
+      float ambiant_frac = 0.2;
+      color += phong(texture(uTexture, vUV).rgb*(1.0 - ambiant_frac),
+                     texture(uTexture, vUV).rgb*ambiant_frac,
+                     vec3(0.1, 0.1, 0.1),
+                     0.,
+                     lcol,
+                     normalize(-ldir));
+         
+      
+   } 
+   for (int i = 0; i < uPtsLightsCount; ++i)
+   {
+      vec3 lpos = uPtsLights[i][0];
+      vec3 ldir = normalize(lpos-fVPos);
+      float d = distance(lpos, fVPos);
+      vec3 lcol = uPtsLights[i][1]/d/d;
+
+      float ambiant_frac = 0.2;
+      color += phong(texture(uTexture, vUV).rgb*(1.0 - ambiant_frac),
+                     texture(uTexture, vUV).rgb*ambiant_frac,
+                     vec3(0.1, 0.1, 0.1),
+                     0.,
                      lcol,
                      ldir);
          
       
-   }
-//   fFragColor = texture(uTexture, vUV).rgb;
+   } 
    fFragColor = color;
-  // fFragColor = uDirLights[0][1];
 }
 
