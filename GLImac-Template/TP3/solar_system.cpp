@@ -18,8 +18,6 @@ make_sphere(GLfloat radius,
             GLsizei discLat,
             GLsizei discLong)
 {
-   std::cout << "POLO 1!" << std::endl;
-
     std::vector<ShapeVertex> sphere;
 
     auto sph_obj = Sphere(radius, discLat, discLong);
@@ -57,7 +55,8 @@ int main(int argc, char** argv) {
     FilePath applicationPath(argv[0]);
     auto path_vs = applicationPath.dirPath() + "shaders" + "3D.vs.glsl";
     auto path_fs_mono = applicationPath.dirPath() + "shaders" + "phong1tex.fs.glsl";
-    auto path_fs_duo = applicationPath.dirPath() + "shaders" + "bitexture.fs.glsl";
+    auto path_fs_duo = applicationPath.dirPath() + "shaders" + "phong2tex.fs.glsl";
+//    auto path_fs_duo = applicationPath.dirPath() + "shaders" + "bitexture.fs.glsl";
     auto program = loadProgram(path_vs, path_fs_mono);    
     program.use();
     
@@ -72,7 +71,8 @@ int main(int argc, char** argv) {
     
     auto earth_tex = textures.load("EarthMap.jpg");
     auto cloud_tex = textures.load("CloudMap.jpg");
-    auto moon_tex = textures.load("MoonMap.jpg");
+    auto moon_tex = textures.load("MoonMap.jpg"); 
+    auto teto_tex = textures.load("tetoaria.png");
     Renderer renderer;
 
     auto earth_renderer = renderer.add_bitex(path_vs,
@@ -124,6 +124,7 @@ int main(int argc, char** argv) {
 
     // stuff
     float speed = 0.2;
+    float speed_max = 30.0;
     
     // mouse stuff
     float mouse_amplitude = 1.0f;
@@ -188,6 +189,9 @@ int main(int argc, char** argv) {
            auto angles = sensibility*mouse_angle_delta;
            rotation_speed[0] += angles[0]*camera.rotation_sign();
            rotation_speed[1] += angles[1];
+           rotation_speed[0] = glm::min<float>(speed_max, glm::max<float>(-speed_max, rotation_speed[0]));
+           rotation_speed[1] = glm::min<float>(speed_max, glm::max<float>(-speed_max, rotation_speed[1]));
+           
            camera.rotateLeft(angles[0]);
            camera.rotateUp(angles[1]);
            was_mouse_pressed = true;
@@ -280,6 +284,7 @@ int main(int argc, char** argv) {
     {
        obj.free_gpu();
     }
+    
        
     return EXIT_SUCCESS;
 }

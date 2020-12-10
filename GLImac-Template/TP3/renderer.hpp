@@ -41,9 +41,10 @@ public:
 
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, _texture);
+      auto uTexture = glGetUniformLocation(_pgrm.getGLId(), "uTexture"); 
       
       // we associate the texture n° 0 to the uniform      
-      glUniform1i(_texture, 0);
+      glUniform1i(uTexture, 0);
    }
    
    void finish()
@@ -80,8 +81,15 @@ public:
       glBindTexture(GL_TEXTURE_2D, _texture2);
       
       // we associate the texture n° 0 to the uniform      
-      glUniform1i(_texture1, 0);
-      glUniform1i(_texture2, 1);
+      //glUniform1i(_texture1, 0);
+      //glUniform1i(_texture2, 1);
+
+      auto uTexture1 = glGetUniformLocation(_pgrm.getGLId(), "uTexture1"); 
+      auto uTexture2 = glGetUniformLocation(_pgrm.getGLId(), "uTexture2");
+     
+      
+      glUniform1i(uTexture1, 0);
+      glUniform1i(uTexture2, 1);
    }
    
    void finish()
@@ -104,7 +112,7 @@ struct PgrmHandle
    bool operator==(const PgrmHandle &other) const
    {
       return id == other.id;
-   }
+  }
 
 };
 
