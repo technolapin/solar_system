@@ -2,6 +2,7 @@
 precision mediump float;
 
 in vec3 vNormale;
+in vec3 vTangent;
 in vec2 vUV;
 in vec3 fPos;
 in vec3 fVPos;
@@ -46,6 +47,7 @@ uniform int uPtsLightsCount;
 
 void main()
 {
+    
    vec3 color = vec3(0., 0., 0);
 
    for (int i = 0; i < uDirLightsCount; ++i)

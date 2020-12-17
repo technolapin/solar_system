@@ -28,7 +28,9 @@ Scene::with(const GLRenderable & rdr)
 }
 
 void
-Scene::add(const GLObject & mesh, const PgrmHandle & pgrm, const Instance & inst)
+Scene::add(const GLObject & mesh,
+           const PgrmHandle & pgrm,
+           const Instance & inst)
 {
    GLRenderable rdr = {mesh, pgrm};
    this->with(rdr);
@@ -36,7 +38,10 @@ Scene::add(const GLObject & mesh, const PgrmHandle & pgrm, const Instance & inst
    vec.push_back(inst);
 }
 
-void Renderer::render(Scene scene, PgrmHandle pgrm, glm::mat4 v_mat, glm::mat4 p_mat)
+void Renderer::render(Scene scene,
+                      PgrmHandle pgrm,
+                      glm::mat4 v_mat,
+                      glm::mat4 p_mat)
 {
    
 

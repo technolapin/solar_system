@@ -13,14 +13,18 @@
 #include "cameras/trackball_camera.hpp"
 #include "cameras/free_fly.hpp"
 
+
+#include "primitives.cpp"
+
+
 GLObject
 make_sphere(GLfloat radius,
             GLsizei discLat,
             GLsizei discLong)
 {
-    std::vector<ShapeVertex> sphere;
+    std::vector<Vertex> sphere;
 
-    auto sph_obj = Sphere(radius, discLat, discLong);
+    auto sph_obj = Primitives::Sphere(radius, discLat, discLong);
     auto n = sph_obj.getVertexCount();
     auto ptr = sph_obj.getDataPointer();
     std::cout << "POLO 1.5!" << std::endl;
@@ -54,7 +58,7 @@ int main(int argc, char** argv) {
     
     FilePath applicationPath(argv[0]);
     auto path_vs = applicationPath.dirPath() + "shaders" + "3D.vs.glsl";
-    auto path_fs_mono = applicationPath.dirPath() + "shaders" + "phong1tex.fs.glsl";
+    auto path_fs_mono = applicationPath.dirPath() + "shaders" + "phong1texfullmaps.fs.glsl";
     auto path_fs_duo = applicationPath.dirPath() + "shaders" + "phong2tex.fs.glsl";
 //    auto path_fs_duo = applicationPath.dirPath() + "shaders" + "bitexture.fs.glsl";
     auto program = loadProgram(path_vs, path_fs_mono);    

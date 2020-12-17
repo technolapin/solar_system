@@ -9,7 +9,7 @@ private:
    GLuint _vbo;
    GLuint _size;
 public:
-   GLObject(std::vector<ShapeVertex> & obj)
+   GLObject(std::vector<Vertex> & obj)
    {
       _size = obj.size();
       
@@ -21,12 +21,13 @@ public:
 
       
       glBufferData(GL_ARRAY_BUFFER,
-                   sizeof(ShapeVertex) * obj.size(),
+                   sizeof(Vertex) * obj.size(),
                    obj.data(),
                    GL_STATIC_DRAW);
 
       glEnableVertexAttribArray(VERTEX_ATTR_POSITION);
-      glEnableVertexAttribArray(VERTEX_ATTR_NORMAL);
+      glEnableVertexAttribArray(VERTEX_ATTR_NORMAL); 
+      glEnableVertexAttribArray(VERTEX_ATTR_TANGENT);
       glEnableVertexAttribArray(VERTEX_ATTR_UV);
 
       glVertexAttribPointer
@@ -35,8 +36,8 @@ public:
             3,
             GL_FLOAT,
             GL_FALSE,
-            sizeof(ShapeVertex),
-            (const GLvoid*) offsetof(ShapeVertex, position)
+            sizeof(Vertex),
+            (const GLvoid*) offsetof(Vertex, position)
             );
       glVertexAttribPointer
          (
@@ -44,8 +45,26 @@ public:
             3,
             GL_FLOAT,
             GL_FALSE,
-            sizeof(ShapeVertex),
-            (const GLvoid*) offsetof(ShapeVertex, normal)
+            sizeof(Vertex),
+            (const GLvoid*) offsetof(Vertex, normal)
+            );
+      glVertexAttribPointer
+         (
+            VERTEX_ATTR_TANGENT,
+            3,
+            GL_FLOAT,
+            GL_FALSE,
+            sizeof(Vertex),
+            (const GLvoid*) offsetof(Vertex, tangent)
+            );
+      glVertexAttribPointer
+         (
+            VERTEX_ATTR_BITANGENT,
+            3,
+            GL_FLOAT,
+            GL_FALSE,
+            sizeof(Vertex),
+            (const GLvoid*) offsetof(Vertex, bitangent)
             );
       glVertexAttribPointer
          (
@@ -53,8 +72,8 @@ public:
             2,
             GL_FLOAT,
             GL_FALSE,
-            sizeof(ShapeVertex),
-            (const GLvoid*) offsetof(ShapeVertex, texCoords)
+            sizeof(Vertex),
+            (const GLvoid*) offsetof(Vertex, texCoords)
             );
       glBindBuffer(GL_ARRAY_BUFFER, 0);
       glBindVertexArray(0);

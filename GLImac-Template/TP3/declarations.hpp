@@ -15,10 +15,23 @@
 #include <string.h>
 using namespace glimac;
 
+struct CompleteVertex {
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec3 tangent;
+    glm::vec3 bitangent;
+    glm::vec2 texCoords;
+};
+
+
+using Vertex = CompleteVertex;
 
 const GLuint VERTEX_ATTR_POSITION = 0;
 const GLuint VERTEX_ATTR_NORMAL = 1;
-const GLuint VERTEX_ATTR_UV = 2;
+const GLuint VERTEX_ATTR_TANGENT = 2;
+const GLuint VERTEX_ATTR_BITANGENT = 3;
+const GLuint VERTEX_ATTR_UV = 4;
+
 
 
 struct GLObject;
