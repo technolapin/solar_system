@@ -15,6 +15,40 @@
 
 #include <optional>
 
+#include <limits>
+#include <math.h>
+
+
+
+glm::vec3
+cast_ray(glm::mat4 V, glm::mat4 P, glm::vec2 pointer_pos)
+{
+
+    auto ray_clip = glm::vec4(pointer_pos, -1.0, 1.0);
+
+    auto ray_eye = glm::inverse(P) * ray_clip;
+    ray_eye = glm::vec4(glm::vec2(ray_eye), -1.0, 0.0);
+
+    auto ray_world = glm::normalize(glm::vec3(glm::inverse(V) * ray_eye));
+
+    return ray_world;
+    
+}
+
+
+bool
+intersect_ray(glm::vec3 ray, glm::vec3 sphere_center, float sphere_radius)
+{
+    auto ortho = sphere_center - glm::dot(sphere_center, ray)*ray;
+    auto dist = glm::l2Norm(ortho);
+    // std::cout << "dist  " << dist << "    z =" << sphere_center[2] << std::endl;
+    return dist <= sphere_radius && sphere_center[2] > 0.;
+}
+
+
+
+
+
 
 namespace Logic
 {
@@ -47,6 +81,9 @@ namespace Logic
             {
                 branch = {};
             }
+
+            
+
 
             void
             next()
@@ -177,6 +214,16 @@ namespace Logic
         {
             return TreeIterator();
         }
+/*
+        TreeIterator begin() const
+        {
+            return TreeIterator(this);
+        }
+        TreeIterator end() const
+        {
+            return TreeIterator();
+        }
+*/
     };
 
 
@@ -187,26 +234,43 @@ namespace Logic
 // note: there is no need for the center
     struct Ellipse
     {
-        glm::vec3 center;
         glm::vec3 forward;
         glm::vec3 up;
         glm::vec3 side;
 
+        GLObject mesh;
+        
+
         float peri;
         float apo;
 
-        Ellipse(glm::vec3 cent,
-                glm::vec3 fwd,
+        Ellipse(glm::vec3 fwd,
                 glm::vec3 pup,
                 float per,
                 float ap)
         {
-            center = cent;
             forward = glm::normalize(fwd);
             up = glm::normalize(pup);
             side = glm::normalize(glm::cross(fwd, up));
             peri = per;
             apo = ap;
+            mesh = ellipse_mesh(0.01f);
+        }
+
+        GLObject
+        ellipse_mesh(float step)
+        {
+            std::vector<ShapeVertex> vertexes;
+            for (float theta = 0.; theta < M_PI*2.0f; theta = theta + step)
+            {
+                auto point = pos_from_angle(theta);
+                ShapeVertex vertex;
+                vertex.position = point;
+                vertexes.push_back(vertex);
+            }
+            vertexes.push_back(vertexes[0]);
+
+            return GLObject(vertexes);            
         }
         
         float
@@ -220,19 +284,23 @@ namespace Logic
             return a;
         }
         
+        glm::vec3
+        pos_from_angle(float theta) const
+        {
+            float a = distance_from_center(theta);
+            auto u = forward*glm::cos<float>(theta) + side * glm::sin<float>(theta);
+            auto pos = a*u;
+            return glm::vec3(pos);
+        }
+
         glm::mat4
         transform_from_angle(float theta) const
         {
-            
-            float a = distance_from_center(theta);
-            
-            auto u = forward*glm::cos<float>(theta) + side * glm::sin<float>(theta);
-            auto pos = center + a*u;
-            //std::cout << a <<"  " << pos << std::endl;
+            auto pos = pos_from_angle(theta);
             return glm::translate(glm::mat4(1), glm::vec3(pos));
-            
         }
 
+        
         float
         speed(float theta) const
         {
@@ -251,6 +319,7 @@ namespace Logic
         
         // spatial data
         float theta;
+        glm::mat4 trans;
 
         // Geometric data
         glm::vec3 tilt;
@@ -274,17 +343,20 @@ namespace Logic
             sphere_radius(-1.0f),
             mesh(ob),
             pgrm(pg)
-        {}
+        {
+            
+            
+        }
 
         Object
         with_geometry(float sc)
         {
             scale = sc;
+            sphere_radius = sc;
             return *this;
         }
         
 
-        
         glm::mat4
         shape_transform() const
         {
@@ -304,12 +376,41 @@ namespace Logic
     {
         Tree<Object, Ellipse> tree;
         std::vector<Light> lights;
+        PgrmHandle curves_pgrm;
 
-        World(Tree<Object, Ellipse> & tr):
-            tree(tr)
+        World(Tree<Object, Ellipse> & tr, PgrmHandle cpgrm):
+            tree(tr),
+            curves_pgrm(cpgrm)
         {
 //            tree = tr;
         }
+
+        std::optional<Object *>
+        select(glm::mat4 V, glm::mat4 P, glm::vec2 cursor_pos)
+        {
+            auto ray = cast_ray(V, P, cursor_pos);
+
+            std::optional<Object *> closest = std::nullopt;
+            float min_dist = std::numeric_limits<float>::max();
+            auto i = 0;
+            
+            for(auto & objellipse: tree)
+            {
+                auto & obj = objellipse._node_val;
+                auto pos = glm::vec3((P*V*obj.trans) * glm::vec4(0, 0, 0, 1));
+                if (intersect_ray(ray, pos, obj.sphere_radius))
+                {
+                    std::cout << "INTERSECTING object of id " << i << std::endl;
+                }
+                ++i;
+                
+            }
+
+            return closest;
+            
+            
+        }
+        
 
         void
         tick(float dt)
@@ -326,14 +427,13 @@ namespace Logic
         }
         
         static void
-        populate_scene(Scene & scene,
-                       const Tree<Object, Ellipse> & node,
-                       const glm::mat4 & transform)
+        update_pos( Tree<Object, Ellipse> & node,
+                   const glm::mat4 & transform)
         {
             auto & obj = node._node_val;
 
             auto geo_trans = obj.shape_transform();
-            scene.add(obj.mesh, obj.pgrm, {transform*geo_trans});
+            obj.trans = transform*geo_trans;
 
             for (auto & child: node.children)
             {
@@ -341,18 +441,18 @@ namespace Logic
                 auto & obj = child_tree._node_val;
                 auto & el = std::get<Ellipse>(child);
                 auto & theta = obj.theta;
-
                 
                 auto trans_child = el.transform_from_angle(theta);
-
                 // TODO: check multiplication order
-                populate_scene(scene, child_tree, transform*trans_child);
+                update_pos(child_tree, transform*trans_child);
 
             }
         }
         
+
+        
         Scene
-        make_scene() const
+        make_scene()
         {
             Scene scene;
 
@@ -375,17 +475,39 @@ namespace Logic
                 }
             }
             
-            populate_scene(scene, tree, glm::mat4(1));
+
+            
+            update_pos(tree, glm::mat4(1));
+
+            
+            //auto & obj = tree._node_val;
+            //scene.add(obj.mesh, obj.pgrm, {obj.trans});
+            for (auto & node: tree)
+            { 
+                auto const & obj = node._node_val;
+                scene.add(obj.mesh, obj.pgrm, {obj.trans});
+                for (auto & child: node.children)
+                {
+                    auto & el = std::get<Ellipse>(child);
+
+                    auto mesh = el.mesh;
+
+                    glm::vec3 el_pos = glm::vec3(obj.trans * glm::vec4(0, 0, 0, 1));
+                    auto el_trans = glm::translate(glm::mat4(1), el_pos);
+                    
+                    scene.add(mesh, curves_pgrm, {el_trans});
+                }
+                
+            }
             
             return scene;
+
             
         }
     };
         
 
 }
-
-
 
 
 
@@ -469,9 +591,13 @@ int main(int argc, char** argv)
     auto path_vs = applicationPath.dirPath() + "shaders" + "3D.vs.glsl";
     auto path_fs_mono = applicationPath.dirPath() + "shaders" + "phong1tex.fs.glsl";
     auto path_fs_duo = applicationPath.dirPath() + "shaders" + "phong2tex.fs.glsl";
-//    auto path_fs_duo = applicationPath.dirPath() + "shaders" + "bitexture.fs.glsl";
-    auto program = loadProgram(path_vs, path_fs_mono);    
-    program.use();
+
+    auto path_vs_curve = applicationPath.dirPath() + "shaders" + "curve.vs.glsl";
+    auto path_fs_curve = applicationPath.dirPath() + "shaders" + "curve.fs.glsl";
+
+    
+//    auto program = loadProgram(path_vs, path_fs_mono);    
+    //  program.use();
     
     TextureHandler textures(
        applicationPath.dirPath()
@@ -495,6 +621,9 @@ int main(int argc, char** argv)
     auto moon_renderer = renderer.add_monotex(path_vs,
                                               path_fs_mono,
                                               moon_tex);
+    auto curve_renderer = renderer.add_curve(path_vs_curve,
+                                             path_fs_curve,
+                                             1.0f);
     
 
     auto M = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
@@ -548,7 +677,7 @@ int main(int argc, char** argv)
     // Trackball camera
     
     TrackballCamera camera;
-    camera.set_center(glm::vec3(0.0f, 0.0f, -5.0f));
+    camera.set_center(glm::vec3(0.0f, 0.0f, 0.0f));
     camera.moveFront(5.0);
 
     float friction = 0.99;
@@ -565,34 +694,31 @@ int main(int argc, char** argv)
     */
 
 
-        Logic::Ellipse el1(glm::vec3(0),
-                           glm::vec3(1, 0, 0),
+        Logic::Ellipse el1(glm::vec3(1, 0, 0),
                            glm::vec3(0, 1, 0),
                            8.0f,
                            10.0f);
-        Logic::Ellipse el2(glm::vec3(0),
-                           glm::vec3(1, 0, 0),
+        Logic::Ellipse el2(glm::vec3(1, 0, 0),
                            glm::vec3(0, 1, 0),
                            3.0f,
                            4.0f);
-        Logic::Ellipse el3(glm::vec3(0),
-                           glm::vec3(1, 0, 0),
+        Logic::Ellipse el3(glm::vec3(1, 0, 0),
                            glm::vec3(0, 0, 1),
                            1.0f,
                            1.0f);
-        Logic::Ellipse el4(glm::vec3(0),
-                           glm::vec3(1, 0, 0),
+        Logic::Ellipse el4(glm::vec3(1, 0, 0),
                            glm::vec3(0, 1, 0),
                            0.3f,
                            0.2f);
 
-        auto ob0 = Logic::Object(meshes[0], earth_renderer);
+        auto ob0 = Logic::Object(meshes[0], earth_renderer).with_geometry(1.0f);
         auto obmoon = Logic::Object(meshes[0], moon_renderer);
         auto ob1 = obmoon
             .with_geometry(1.0f/4.0f);
         auto ob2 = obmoon.with_geometry(1.0f/16.0f);
         auto ob3 = obmoon.with_geometry(1.0f/64.0f);
 
+        
         /*
  //        Logic::Object ob0 = {1.0f, 0.0f, glm::vec3(0), 0.0f, 1.0f,  earth_renderer, meshes[0], 1.0f};
         Logic::Object ob1 = {1.0f, 0.0f, glm::vec3(0), 0.0f, 0.25f,  moon_renderer, meshes[0], 1.0f/4.0f};
@@ -609,21 +735,15 @@ int main(int argc, char** argv)
             .add_child(Logic::Tree<Logic::Object, Logic::Ellipse>(ob3), el4);
 
         
-        Logic::World world(tree);
+        Logic::World world(tree, curve_renderer);
 
         world.lights.push_back({LightType::Directional, {glm::vec3(1), glm::vec3(0.7)}});
     
 
 
-    Logic::Ellipse el(glm::vec3(0, 0, -5),
-               glm::vec3(1, 0, 0),
-               glm::vec3(0, 1, 0),
-               1.0f,
-               20.0f);
-    
-    float theta = 0.0f;
 
     bool running = true;
+
     
 // Application loop:
     bool done = false;
@@ -726,7 +846,7 @@ int main(int argc, char** argv)
   
         auto test_scene =  world.make_scene();
         renderer.render(test_scene, earth_renderer, camera.getViewMatrix(), P);
-        
+        world.select(camera.getViewMatrix(), P,  mouse_pos);
         // Update the display
         windowManager.swapBuffers();
     }
