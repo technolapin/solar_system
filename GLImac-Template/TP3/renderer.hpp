@@ -164,6 +164,13 @@ private:
 
 public:
    Renderer() = default;
+    ~Renderer()
+    {
+        for (auto ptr: _pgrms)
+        {
+            free(ptr);
+        }
+    }
 
    /*
    PgrmHandle

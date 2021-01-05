@@ -272,6 +272,7 @@ namespace Logic
 
             return GLObject(vertexes);            
         }
+
         
         float
         distance_from_center(float theta) const
@@ -547,28 +548,7 @@ make_sphere(GLfloat radius,
 
 int main(int argc, char** argv)
 {
-    
-    {
-        Logic::Tree<int, float> tree(0);
-        Logic::Tree<int, float> a(1);
-        Logic::Tree<int, float> b(2);
-        Logic::Tree<int, float> c(3);
-        Logic::Tree<int, float> d(4);
-        Logic::Tree<int, float> e(5);
-        Logic::Tree<int, float> f(6);
-
-        tree.add_child(a, 0.).add_child(d, 3.).add_child(e, 4.).add_child(f, 5.);
-        tree.add_child(b, 1.);
-        tree.add_child(c, 2.);
-
-        for (auto x: tree)
-        {
-            std::cout << x.value() << " ";
-        } std::cout << std::endl;
-    }
-    
-    
-
+        
     
     // Initialize SDL and open a window
     SDLWindowManager windowManager(1000, 1000, "GLImac");
