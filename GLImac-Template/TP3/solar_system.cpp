@@ -545,14 +545,155 @@ make_sphere(GLfloat radius,
 }
 
 
+enum CameraType
+{
+    FreeFly,
+    Trackball
+};
+
+struct CameraManager
+{
+    CameraType mode = CameraType::Trackball;
+
+    TrackballCamera track_cam;;
+    FreeflyCamera fly_cam;
+    
+    float     track_friction = 0.99;
+    float     track_sensibility = 10000.0;
+    glm::vec2 track_rotation_speed = glm::vec2(0);
+    bool      track_was_mouse_pressed = false;
+
+    float fly_speed = 1.0;
+
+    
+    float mouse_amplitude = 1.0f;
+    float mouse_speed = 1.0f;
+    glm::ivec2 mouse_pos = glm::vec2(0);
+    glm::vec2 mouse_angle = glm::vec2(0.0f);
+
+    // stuff
+    float speed = 0.2;
+    float speed_max = 30.0;
+
+    float mode_switch_delay = 10;
+    float mode_switch_cooldown = 0;
+
+    void
+    tick(SDLWindowManager & windowManager)
+    {
+        if (mode_switch_cooldown) mode_switch_cooldown--;
+        
+        if (!mode_switch_cooldown && windowManager.isKeyPressed(SDLK_SPACE))
+        {
+            if (mode == CameraType::Trackball)
+                mode = CameraType::FreeFly;
+            else
+                mode = CameraType::Trackball;
+            mode_switch_cooldown = mode_switch_delay;
+        }
+        
+        /// events and such
+        auto new_mouse_pos = windowManager.getMousePosition();
+        auto new_mouse_angle = glm::vec2(glm::atan(new_mouse_pos[0]/mouse_amplitude),
+                                         glm::atan(new_mouse_pos[1]/mouse_amplitude));
+        auto mouse_angle_delta = new_mouse_angle - mouse_angle;
+        auto mouse_delta = new_mouse_pos - mouse_pos;
+        if ((new_mouse_pos[0] == 0.0f && new_mouse_pos[1] == 0.0f)
+            || (mouse_pos[0] == 0.0f && mouse_pos[0] == 0.0f))
+        {
+            mouse_delta = glm::vec2(0.0f);
+        }
+        mouse_pos = new_mouse_pos;
+        mouse_angle = new_mouse_angle;
+
+        switch (mode)
+        {
+            case CameraType::Trackball:
+            //////////// Trackball track_cam
+            {
+                if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT))
+                {
+                    track_rotation_speed *= track_friction/2.0;
+                    auto angles = track_sensibility*mouse_angle_delta;
+                    track_rotation_speed[0] += angles[0]*track_cam.rotation_sign();
+                    track_rotation_speed[1] += angles[1];
+                    track_rotation_speed[0] = glm::min<float>(speed_max, glm::max<float>(-speed_max, track_rotation_speed[0]));
+                    track_rotation_speed[1] = glm::min<float>(speed_max, glm::max<float>(-speed_max, track_rotation_speed[1]));
+           
+                    track_cam.rotateLeft(angles[0]);
+                    track_cam.rotateUp(angles[1]);
+                    track_was_mouse_pressed = true;
+                }
+                else
+                {
+                    track_cam.rotateLeft(track_rotation_speed[0]*track_cam.rotation_sign());
+                    track_cam.rotateUp(track_rotation_speed[1]);
+                    track_was_mouse_pressed = false;
+                }
+                track_rotation_speed *= track_friction;
+                if (windowManager.isKeyPressed(SDLK_z))
+                {
+                    track_cam.moveFront(speed);
+                }
+                else if (windowManager.isKeyPressed(SDLK_s))
+                {
+                    track_cam.moveFront(-speed);
+                }
+            }
+            break;
+
+            default:
+            /////////// freefly camera
+            {
+                if (windowManager.isKeyPressed(SDLK_z))
+                {
+                    fly_cam.moveFront(fly_speed);
+                }
+                else if (windowManager.isKeyPressed(SDLK_s))
+                {
+                    fly_cam.moveFront(-fly_speed);
+                }
+                else if (windowManager.isKeyPressed(SDLK_d))
+                {
+                    fly_cam.moveLeft(-fly_speed);
+                }
+                else if (windowManager.isKeyPressed(SDLK_q))
+                {
+                    fly_cam.moveLeft(fly_speed);
+                }
+
+                fly_cam.rotateLeft(mouse_delta[0]*mouse_speed);
+                fly_cam.rotateUp(mouse_delta[1]*mouse_speed);
+            }
+        }
+    }
+
+    
+    glm::mat4
+    view_matrix()
+    {
+        switch(mode)
+        {
+            case CameraType::Trackball:
+                return track_cam.getViewMatrix();
+            default:
+                return fly_cam.getViewMatrix();
+        }
+    }
+
+    
+};
+
+
 
 int main(int argc, char** argv)
 {
         
-    
+    int width = 1000;
+    int height = 1000;
     // Initialize SDL and open a window
-    SDLWindowManager windowManager(1000, 1000, "GLImac");
-
+    SDLWindowManager windowManager(width, height, "GLImac");
+    glm::vec2 dims((float) width, (float) height);
     // Initialize glew for OpenGL3+ support
     GLenum glewInitError = glewInit();
     if(GLEW_OK != glewInitError) {
@@ -643,36 +784,6 @@ int main(int argc, char** argv)
        pos_init.push_back(p_ortho);
     }
 
-    // stuff
-    float speed = 0.2;
-    float speed_max = 30.0;
-    
-    // mouse stuff
-    float mouse_amplitude = 1.0f;
-    float mouse_speed = 1.0f;
-    auto mouse_pos = windowManager.getMousePosition();
-    auto mouse_angle = glm::vec2(glm::atan(mouse_pos[0]/mouse_amplitude),
-                                 glm::atan(mouse_pos[1]/mouse_amplitude));
-    
-    // Trackball camera
-    
-    TrackballCamera camera;
-    camera.set_center(glm::vec3(0.0f, 0.0f, 0.0f));
-    camera.moveFront(5.0);
-
-    float friction = 0.99;
-    float sensibility = 10000.0;
-    auto rotation_speed = glm::vec2(0.0f, 0.0f);
-    bool was_mouse_pressed = false;
-    
-
-    //////// Freefly camera
-    /*
-    float speed = 1.0;
-    
-    FreeflyCamera camera;
-    */
-
 
         Logic::Ellipse el1(glm::vec3(1, 0, 0),
                            glm::vec3(0, 1, 0),
@@ -698,14 +809,6 @@ int main(int argc, char** argv)
         auto ob2 = obmoon.with_geometry(1.0f/16.0f);
         auto ob3 = obmoon.with_geometry(1.0f/64.0f);
 
-        
-        /*
- //        Logic::Object ob0 = {1.0f, 0.0f, glm::vec3(0), 0.0f, 1.0f,  earth_renderer, meshes[0], 1.0f};
-        Logic::Object ob1 = {1.0f, 0.0f, glm::vec3(0), 0.0f, 0.25f,  moon_renderer, meshes[0], 1.0f/4.0f};
-        Logic::Object ob2 = {1.0f, 0.0f, glm::vec3(0), 0.0f, 0.0625f,  moon_renderer, meshes[0], 1.0f/16.0f};
-
-        Logic::Object ob3 = {1.0f, 0.0f, glm::vec3(0), 0.0f, 0.0625f/4.0f,  moon_renderer, meshes[0], 1.0f/64.0f};
-        */
 
         Logic::Tree<Logic::Object, Logic::Ellipse> tree(ob0);
 
@@ -724,8 +827,9 @@ int main(int argc, char** argv)
 
     bool running = true;
 
+    CameraManager cam;
     
-// Application loop:
+    // Application loop:
     bool done = false;
     while(!done) {
         // Event loop:
@@ -746,73 +850,8 @@ int main(int argc, char** argv)
            running =  !running;
         }
 
-        
-        /// events and such
-        auto new_mouse_pos = windowManager.getMousePosition();
-        auto new_mouse_angle = glm::vec2(glm::atan(new_mouse_pos[0]/mouse_amplitude),
-                                         glm::atan(new_mouse_pos[1]/mouse_amplitude));
-        auto mouse_angle_delta = new_mouse_angle - mouse_angle;
-        auto mouse_delta = new_mouse_pos - mouse_pos;
-        if ((new_mouse_pos[0] == 0.0f && new_mouse_pos[1] == 0.0f)
-            || (mouse_pos[0] == 0.0f && mouse_pos[0] == 0.0f))
-        {
-           mouse_delta = glm::vec2(0.0f);
-        }
-        mouse_pos = new_mouse_pos;
-        mouse_angle = new_mouse_angle;
+        cam.tick(windowManager);
 
-        //////////// Trackball camera
-        if (windowManager.isMouseButtonPressed(SDL_BUTTON_LEFT))
-        {
-           rotation_speed *= friction/2.0;
-           auto angles = sensibility*mouse_angle_delta;
-           rotation_speed[0] += angles[0]*camera.rotation_sign();
-           rotation_speed[1] += angles[1];
-           rotation_speed[0] = glm::min<float>(speed_max, glm::max<float>(-speed_max, rotation_speed[0]));
-           rotation_speed[1] = glm::min<float>(speed_max, glm::max<float>(-speed_max, rotation_speed[1]));
-           
-           camera.rotateLeft(angles[0]);
-           camera.rotateUp(angles[1]);
-           was_mouse_pressed = true;
-        }
-        else
-        {
-           camera.rotateLeft(rotation_speed[0]*camera.rotation_sign());
-           camera.rotateUp(rotation_speed[1]);
-           was_mouse_pressed = false;
-        }
-        rotation_speed *= friction;
-        if (windowManager.isKeyPressed(SDLK_z))
-        {
-           camera.moveFront(speed);
-        }
-        else if (windowManager.isKeyPressed(SDLK_s))
-        {
-           camera.moveFront(-speed);
-        }
-
-        /////////// freefly camera
-        /*
-        if (windowManager.isKeyPressed(SDLK_z))
-        {
-           camera.moveFront(speed);
-        }
-        else if (windowManager.isKeyPressed(SDLK_s))
-        {
-           camera.moveFront(-speed);
-        }
-        else if (windowManager.isKeyPressed(SDLK_d))
-        {
-           camera.moveLeft(-speed);
-        }
-        else if (windowManager.isKeyPressed(SDLK_q))
-        {
-           camera.moveLeft(speed);
-        }
-
-        camera.rotateLeft(mouse_delta[0]*mouse_speed);
-        camera.rotateUp(mouse_delta[1]*mouse_speed);
-        */
         // *********************************
         // * HERE SHOULD COME THE RENDERING CODE
         // *********************************
@@ -825,12 +864,19 @@ int main(int argc, char** argv)
 
   
         auto test_scene =  world.make_scene();
-        renderer.render(test_scene, earth_renderer, camera.getViewMatrix(), P);
-        world.select(camera.getViewMatrix(), P,  mouse_pos);
+        auto V = cam.view_matrix();
+        renderer.render(test_scene, earth_renderer, V, P);
+        auto mouse_pos = windowManager.getMousePosition();
+        glm::vec2 cursor_pos = glm::vec2(((float) (mouse_pos[0]-width/2))/ ((float) width),
+                                         ((float) (mouse_pos[1]-height/2))/ ((float) height));
+        //std::cout << "mouse pos: " << mouse_pos;
+        //std::cout << "   cursor pos: " << cursor_pos << std::endl;
+        world.select(V, P,  cursor_pos);
         // Update the display
         windowManager.swapBuffers();
     }
 
+    
     for (auto & obj: meshes)
     {
        obj.free_gpu();
