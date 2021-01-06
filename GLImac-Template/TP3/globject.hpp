@@ -9,6 +9,10 @@ private:
    GLuint _vbo;
    GLuint _size;
 public:
+    GLObject()
+    {
+    }
+    
    GLObject(std::vector<ShapeVertex> & obj)
    {
       _size = obj.size();
@@ -69,10 +73,10 @@ public:
    
 
    void
-   draw() const
+   draw(GLenum mode) const
    {
       glBindVertexArray(_vao);
-      glDrawArrays(GL_TRIANGLES, 0, _size);
+      glDrawArrays(mode, 0, _size);
       glBindVertexArray(0);
    }
 

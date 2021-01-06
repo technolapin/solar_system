@@ -7,13 +7,17 @@ struct ProgramManager
 protected:
    Program _pgrm;
 public:
-   virtual void setup() = 0;
+    GLenum draw_mode = GL_TRIANGLES;
+
+    virtual void setup() = 0;
    virtual void finish() = 0;
-   ProgramManager(std::string path_vs, std::string path_fs)
+    ProgramManager(std::string path_vs, std::string path_fs, GLenum mode = GL_TRIANGLES):
+        _pgrm(loadProgram(path_vs, path_fs)),
+        draw_mode(mode)
    {
-      _pgrm = loadProgram(path_vs, path_fs);
    }
-   GLuint
+
+    GLuint
    getGLId()
    {
       return _pgrm.getGLId();
@@ -103,6 +107,38 @@ public:
 };
 
 
+struct CurveProgramManager: public ProgramManager
+{
+private:
+    float _thickness;
+public:
+    CurveProgramManager(std::string path_vs,
+                        std::string path_fs,
+                        float thickness):
+        ProgramManager(path_vs, path_fs, GL_LINE_LOOP)
+   {
+       _thickness = thickness;
+   }
+   
+   void setup()
+   {
+      _pgrm.use();
+      
+   }
+   
+   void finish()
+   {
+   }
+};
+
+
+
+
+
+
+
+
+
 
 
 
@@ -120,15 +156,21 @@ struct PgrmHandle
 struct Renderer
 {
 private:
-   std::vector<ProgramManager *> _pgrms;
-   GLuint _uMVP;
-   GLuint _uMV;
-   GLuint _uM;
-   GLuint _uNormal;
-
+    std::vector<ProgramManager *> _pgrms;
+    GLuint _uMVP;
+    GLuint _uMV;
+    GLuint _uM;
+    GLuint _uNormal;    
 
 public:
    Renderer() = default;
+    ~Renderer()
+    {
+        for (auto ptr: _pgrms)
+        {
+            free(ptr);
+        }
+    }
 
    /*
    PgrmHandle
@@ -156,7 +198,17 @@ public:
       return {_pgrms.size() -1};
    }
 
-   void setup(PgrmHandle index)
+   PgrmHandle
+   add_curve(std::string path_vs,
+             std::string path_fs,
+             GLfloat thickness)
+   {
+      _pgrms.push_back(new CurveProgramManager(path_vs, path_fs, thickness));
+      return {_pgrms.size() -1};
+   }
+
+    
+    GLenum setup(PgrmHandle index)
    {
       _uMVP = glGetUniformLocation(_pgrms[index.id]->getGLId(), "uMVPMatrix");
       _uMV = glGetUniformLocation(_pgrms[index.id]->getGLId(), "uMVMatrix");
@@ -164,6 +216,7 @@ public:
       _uNormal = glGetUniformLocation(_pgrms[index.id]->getGLId(), "uNormalMatrix");
 
       _pgrms[index.id]->setup();
+      return _pgrms[index.id]->draw_mode;
    }
    void finish(PgrmHandle index)
    {
@@ -177,6 +230,9 @@ public:
       return glGetUniformLocation(_pgrms[index.id]->getGLId(), name);
    }
 };
+
+
+
 
 
 

@@ -46,7 +46,7 @@ void Renderer::render(Scene scene, PgrmHandle pgrm, glm::mat4 v_mat, glm::mat4 p
       auto & mesh = couple.first.mesh;
       auto & pgrm = couple.first.pgrm;
 
-      setup(pgrm);
+      auto draw_mode = setup(pgrm);
 
       // get lights uniforms
       GLuint uDirLights = this->uniform_location(pgrm, "uDirLights");
@@ -77,9 +77,7 @@ void Renderer::render(Scene scene, PgrmHandle pgrm, glm::mat4 v_mat, glm::mat4 p
           
       }std::cout <<std::endl;
       */
-
-      
-      
+          
       for (auto & inst: couple.second)
       {
           auto M = inst.model_mat;
@@ -100,7 +98,7 @@ void Renderer::render(Scene scene, PgrmHandle pgrm, glm::mat4 v_mat, glm::mat4 p
                             1, false,
                             glm::value_ptr(N));
 
-         mesh.draw();
+         mesh.draw(draw_mode);
 
       }
 

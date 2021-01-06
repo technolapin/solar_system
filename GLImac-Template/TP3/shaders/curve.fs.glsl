@@ -1,12 +1,11 @@
 #version 300 es
 precision mediump float;
 
-in vec3 vNormale;
-in vec2 vUV;
 
 out vec3 fFragColor;
 
 void main()
 {
-   fFragColor = normalize(vNormale);
+   fFragColor = vec3(1, 1, 0);
 }
+
