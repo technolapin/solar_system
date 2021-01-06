@@ -1,5 +1,5 @@
-file_name=$1
-out_name=$2
+file_name="GLImac-Template/TP3/solar_system.cpp"
+out_name="build/TP3/TP3_solar_system"
 
 echo "\n\n\nSTARTING\n\n" >> logs
 
