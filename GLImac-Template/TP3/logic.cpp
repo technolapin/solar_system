@@ -5,7 +5,7 @@ namespace Logic
     {
     private:
         // we can avoid to work with pointers since the vector is already a pointer
- 
+       
     public: 
         NodeType _node_val;
         std::vector<std::pair<EdgeType, Tree>> children;
@@ -14,9 +14,8 @@ namespace Logic
         struct TreeIterator
         {
         private:
-//            Tree<NodeType, EdgeType> * _treeptr;
-            // vector elements are trees and the index of their selected child
-            std::vector<std::pair<Tree<NodeType, EdgeType> *, int >> branch;
+           // vector elements are trees and the index of their selected child
+           std::vector<std::pair<Tree<NodeType, EdgeType> *, int >> branch;
 
         public:
 
@@ -129,7 +128,7 @@ namespace Logic
         Tree &
         operator[](size_t child_index)
         {
-            return std::get<Tree>(children[child_index]);
+            return std::get<1>(children[child_index]);
         }
 
         TreeIterator begin()
@@ -296,11 +295,81 @@ namespace Logic
         std::vector<Light> lights;
         PgrmHandle curves_pgrm;
 
-        World(Tree<Object, Ellipse> & tr, PgrmHandle cpgrm):
+       std::vector<Tree<Object, Ellipse> *> selected;
+       
+       
+       World(Tree<Object, Ellipse> & tr, PgrmHandle cpgrm):
             tree(tr),
             curves_pgrm(cpgrm)
-        {}
+        {
+           selected  = {&tree};
+        }
 
+       void
+       select_root()
+       {
+          if (selected.size() > 1)
+          {
+             selected.pop_back();
+          }
+       }
+
+       void
+       select_child()
+       {
+          if (selected.back()->children.size() > 0)
+          {
+             selected.push_back(& std::get<1>(selected.back()->children[0]));
+          }
+       }
+
+       void
+       select_prev_adelphe()
+       {
+          if (selected.size() > 1)
+          {
+             auto & mother = **std::prev(std::prev(selected.end()));
+             auto i = 0;
+             for (auto & pair: mother.children)
+             {
+                auto & child = std::get<1>(pair);
+                if (&child == selected.back())
+                {
+                   selected.back() = & std::get<1>(mother.children[(i-1) % mother.children.size()]);
+                   return;
+                }
+                i++;
+             }
+          }
+       }
+       
+       void
+       select_next_adelphe()
+       {
+          if (selected.size() > 1)
+          {
+             auto & mother = **std::prev(std::prev(selected.end()));
+             auto i = 0;
+             for (auto & pair: mother.children)
+             {
+                auto & child = std::get<1>(pair);
+                if (&child == selected.back())
+                {
+                   selected.back() = & std::get<1>(mother.children[(i+1) % mother.children.size()]);
+                   return;
+                }
+                i++;
+             }
+          }
+       }
+
+       glm::vec3
+       get_selected_pos()
+       {
+          auto & obj = selected.back()->_node_val;
+          return glm::vec3(obj.trans * glm::vec4(0, 0, 0, 1));
+       }
+       
         std::optional<Object *>
         select(glm::mat4 V, glm::mat4 P, glm::vec2 cursor_pos)
         {
@@ -310,7 +379,7 @@ namespace Logic
             float min_dist = std::numeric_limits<float>::max();
             auto i = 0;
             
-            std::cout << "RAY = " << ray << std::endl;
+//            std::cout << "RAY = " << ray << std::endl;
             auto camera_pos = glm::vec3(V * glm::vec4(0, 0, 0, 1));
             for(auto & objellipse: tree)
             {
@@ -373,7 +442,7 @@ namespace Logic
 
         
         Scene
-        make_scene()
+        make_scene(bool partial_render)
         {
             Scene scene;
 
@@ -397,13 +466,15 @@ namespace Logic
             }
             
 
-            
             update_pos(tree, glm::mat4(1));
 
-            
-            //auto & obj = tree._node_val;
-            //scene.add(obj.mesh, obj.pgrm, {obj.trans});
-            for (auto & node: tree)
+            auto rendered = &tree;
+            if (partial_render)
+            {
+               rendered = selected.back();
+            }
+
+            for (auto & node: *rendered)
             { 
                 auto const & obj = node._node_val;
                 scene.add(obj.mesh, obj.pgrm, {obj.trans});

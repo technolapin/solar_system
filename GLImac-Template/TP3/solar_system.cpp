@@ -110,8 +110,9 @@ struct CameraManager
     float mode_switch_cooldown = 0;
 
     void
-    tick(SDLWindowManager & windowManager)
+    tick(SDLWindowManager & windowManager, Logic::World & world)
     {
+       track_cam.set_center(world.get_selected_pos());
         if (mode_switch_cooldown) mode_switch_cooldown--;
         
         if (!mode_switch_cooldown && windowManager.isKeyPressed(SDLK_SPACE))
@@ -249,9 +250,11 @@ int main(int argc, char** argv)
     auto path_vs_curve = applicationPath.dirPath() + "shaders" + "curve.vs.glsl";
     auto path_fs_curve = applicationPath.dirPath() + "shaders" + "curve.fs.glsl";
 
+    auto path_vs_notrans = applicationPath.dirPath() + "shaders" + "3D_no_transform.vs.glsl";
+    auto path_fs_simpletexturing = applicationPath.dirPath() + "shaders" + "texture.fs.glsl";
+
     
-//    auto program = loadProgram(path_vs, path_fs_mono);    
-    //  program.use();
+    
     
     TextureHandler textures(
        applicationPath.dirPath()
@@ -265,7 +268,9 @@ int main(int argc, char** argv)
     auto earth_tex = textures.load("EarthMap.jpg");
     auto cloud_tex = textures.load("CloudMap.jpg");
     auto moon_tex = textures.load("MoonMap.jpg"); 
+    auto sun_tex = textures.load("2k_sun.jpg"); 
     auto teto_tex = textures.load("tetoaria.png");
+    auto stars_tex = textures.load("starmap_g4k.jpg");
     Renderer renderer;
 
     auto earth_renderer = renderer.add_bitex(path_vs,
@@ -275,9 +280,15 @@ int main(int argc, char** argv)
     auto moon_renderer = renderer.add_monotex(path_vs,
                                               path_fs_mono,
                                               moon_tex);
+    auto sun_renderer = renderer.add_monotex(path_vs,
+                                             path_fs_mono,
+                                             sun_tex);
     auto curve_renderer = renderer.add_curve(path_vs_curve,
                                              path_fs_curve,
                                              1.0f);
+    auto box_renderer = renderer.add_monotex(path_vs_notrans,
+                                             path_fs_simpletexturing,
+                                             stars_tex);
     
 
     auto M = glm::translate(glm::mat4(), glm::vec3(0.0f, 0.0f, -5.0f));
@@ -324,28 +335,30 @@ int main(int argc, char** argv)
                            10.0f);
         Logic::Ellipse el2(glm::vec3(1, 0, 0),
                            glm::vec3(0, 1, 0),
-                           3.0f,
-                           4.0f);
+                           1.0f,
+                           2.0f);
         Logic::Ellipse el3(glm::vec3(1, 0, 0),
                            glm::vec3(0, 0, 1),
                            1.0f,
                            1.0f);
         Logic::Ellipse el4(glm::vec3(1, 0, 0),
                            glm::vec3(0, 1, 0),
-                           0.3f,
-                           0.2f);
+                           0.2f,
+                           0.3f);
 
-        auto ob0 = Logic::Object(meshes[0], earth_renderer).with_geometry(1.0f);
-        auto obmoon = Logic::Object(meshes[0], moon_renderer);
+        auto ob_sun = Logic::Object(meshes[0], sun_renderer).with_geometry(1.0f);        
+        auto ob_earth = Logic::Object(meshes[0], earth_renderer).with_geometry(pow(0.5, 1.));
+        auto obmoon = Logic::Object(meshes[0], moon_renderer);        
         auto ob1 = obmoon
-            .with_geometry(1.0f/4.0f);
-        auto ob2 = obmoon.with_geometry(1.0f/16.0f);
-        auto ob3 = obmoon.with_geometry(1.0f/64.0f);
+            .with_geometry(pow(0.5, 2.));
+        auto ob2 = obmoon.with_geometry(pow(0.5, 3.));
+        auto ob3 = obmoon.with_geometry(pow(0.5, 4.));
 
 
-        Logic::Tree<Logic::Object, Logic::Ellipse> tree(ob0);
+        Logic::Tree<Logic::Object, Logic::Ellipse> tree(ob_sun);
 
-        tree.add_child(Logic::Tree<Logic::Object, Logic::Ellipse>(ob1), el1);
+        tree.add_child(Logic::Tree<Logic::Object, Logic::Ellipse>(ob_earth), el1)
+           .add_child(Logic::Tree<Logic::Object, Logic::Ellipse>(ob1), el2);
         tree.add_child(Logic::Tree<Logic::Object, Logic::Ellipse>(ob1), el2)
             .add_child(Logic::Tree<Logic::Object, Logic::Ellipse>(ob2), el3)
             .add_child(Logic::Tree<Logic::Object, Logic::Ellipse>(ob3), el4);
@@ -361,7 +374,10 @@ int main(int argc, char** argv)
     bool running = true;
 
     CameraManager cam;
-    
+
+    auto switch_total_cd = 10;
+    auto switch_cd = 0;
+    bool partial_render = false;
     // Application loop:
     bool done = false;
     while(!done) {
@@ -373,6 +389,8 @@ int main(int argc, char** argv)
             }
         }
 
+        if (switch_cd) switch_cd--;
+        
         if (windowManager.isKeyPressed(SDLK_ESCAPE))
         {
            done = true;
@@ -383,7 +401,38 @@ int main(int argc, char** argv)
            running =  !running;
         }
 
-        cam.tick(windowManager);
+
+        if (!switch_cd)
+        {
+           if (windowManager.isKeyPressed(SDLK_UP))
+           {
+              world.select_child();
+              switch_cd = switch_total_cd;
+           }
+           if (windowManager.isKeyPressed(SDLK_DOWN))
+           {
+              world.select_root();
+              switch_cd = switch_total_cd;
+           }
+           if (windowManager.isKeyPressed(SDLK_LEFT))
+           {
+              world.select_prev_adelphe();
+              switch_cd = switch_total_cd;
+           }
+           if (windowManager.isKeyPressed(SDLK_RIGHT))
+           {
+              world.select_next_adelphe();
+              switch_cd = switch_total_cd;
+           }
+           if (windowManager.isKeyPressed(SDLK_h))
+           {
+              partial_render = !partial_render;
+              switch_cd = switch_total_cd;
+           }
+        }
+
+        
+        cam.tick(windowManager, world);
 
         // *********************************
         // * HERE SHOULD COME THE RENDERING CODE
@@ -393,10 +442,18 @@ int main(int argc, char** argv)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         
-        if (running) world.tick(0.03f);
+        if (running) world.tick(0.03f);        
 
-  
-        auto test_scene =  world.make_scene();
+        
+        
+        auto test_scene =  world.make_scene(partial_render);
+
+        // the bounding box (this is not meant to stay like this)
+        /*
+        float box_r = 2.;
+        glm::mat4 box_dim = glm::scale(glm::mat4(1), glm::vec3(1., 1., 1.)*box_r);
+        test_scene.add(meshes[0], box_renderer, {box_dim});
+        */
         auto V = cam.view_matrix();
         renderer.render(test_scene, earth_renderer, V, P);
         auto mouse_pos = windowManager.getMousePosition();
@@ -404,7 +461,7 @@ int main(int argc, char** argv)
                                          ((float) (mouse_pos[1]-height/2))/ ((float) height));
         //std::cout << "mouse pos: " << mouse_pos;
         //std::cout << "   cursor pos: " << cursor_pos << std::endl;
-        world.select(V, P,  cursor_pos);
+//        world.select(V, P,  cursor_pos);
         // Update the display
         windowManager.swapBuffers();
     }
